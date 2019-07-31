@@ -247,9 +247,9 @@ void PathSearcher::onTranslateInstruction(ExecutionSignal *signal, S2EExecutionS
 
 void PathSearcher::onInstructionExecution(S2EExecutionState *state, uint64_t pc) {
     getWarningsStream(state) << "reached vulnerability " << hexval(pc) << "\n";
-    uint64_t eax = state->regs()->read<target_ulong>(offsetof(CPUX86State, regs[R_EAX]));
-    uint64_t ecx = state->regs()->read<target_ulong>(offsetof(CPUX86State, regs[R_ECX]));
-    getWarningsStream(state) << "EAX=" << hexval(eax) << ", ECX=" << hexval(ecx) << "\n";
+    uint64_t lr = state->regs()->read<target_ulong>(offsetof(CPUARMState, regs[14]));
+    uint64_t sp = state->regs()->read<target_ulong>(offsetof(CPUARMState, regs[13]));
+    getWarningsStream(state) << "SP=" << hexval(sp) << ", LR=" << hexval(lr) << "\n";
 }
 
 void PathSearcher::onSegFault(S2EExecutionState *state, uint64_t pid, uint64_t pc) {

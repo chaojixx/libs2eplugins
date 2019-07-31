@@ -180,7 +180,7 @@ void TranslationBlockTracer::trace(S2EExecutionState *state, uint64_t pc, ExecTr
     for (unsigned i = 0; i < sizeof(tb.registers) / sizeof(tb.registers[0]); ++i) {
         // XXX: make it portable across architectures
         unsigned size = sizeof(target_ulong) < sizeof(*tb.registers) ? sizeof(target_ulong) : sizeof(*tb.registers);
-        unsigned offset = offsetof(CPUX86State, regs[i]);
+        unsigned offset = offsetof(CPUARMState, regs[i]);
         if (!state->regs()->read(offset, &tb.registers[i], size, false)) {
             tb.registers[i] = 0xDEADBEEF;
 
@@ -197,7 +197,7 @@ void TranslationBlockTracer::trace(S2EExecutionState *state, uint64_t pc, ExecTr
     assert(sizeof(tb.stackByteMask) * CHAR_BIT >= ARRAY_SIZE(tb.stack));
     assert(sizeof(tb.stackSymbMask) * CHAR_BIT >= ARRAY_SIZE(tb.stack));
     for (unsigned i = 0; i < ARRAY_SIZE(tb.stack); i++) {
-        klee::ref<klee::Expr> val = state->mem()->read(tb.registers[R_ESP] + i);
+        klee::ref<klee::Expr> val = state->mem()->read(tb.registers[13] + i);
         if (val.isNull()) {
             continue;
         }

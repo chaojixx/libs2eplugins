@@ -108,7 +108,7 @@ bool ProcessExecutionDetector::isTrackedPc(S2EExecutionState *state, uint64_t pc
     if (plgState->m_trackedPids.size() == 0) {
         return false;
     }
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     if (m_monitor->isKernelAddress(pc)) {
         return false;
     }
@@ -124,7 +124,7 @@ bool ProcessExecutionDetector::isTrackedPc(S2EExecutionState *state, uint64_t pc
             return false;
         }
     }
-
+#endif
     uint64_t pid = m_monitor->getPid(state);
 
     return plgState->m_trackedPids.count(pid) > 0;

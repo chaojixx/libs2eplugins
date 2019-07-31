@@ -22,7 +22,7 @@
 #include <sstream>
 
 extern "C" {
-extern CPUX86State *env;
+extern CPUARMState *env;
 }
 
 using namespace klee;

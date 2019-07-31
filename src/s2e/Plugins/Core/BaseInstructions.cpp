@@ -100,16 +100,21 @@ void BaseInstructions::initialize() {
     }
 
     s2e()->getCorePlugin()->onCustomInstruction.connect(sigc::mem_fun(*this, &BaseInstructions::onCustomInstruction));
+#if defined(TARGET_ARM)
+
+    s2e()->getCorePlugin()->onMakePerpherialSymbolic.connect(sigc::mem_fun(*this, &BaseInstructions::onMakePerpherialSymbolic));
+
+#endif
 
     g_s2e_allow_custom_instructions = 1;
 }
 
 void BaseInstructions::onTranslateBlockStart(ExecutionSignal *signal, S2EExecutionState *state, TranslationBlock *tb,
                                              uint64_t pc) {
-    if ((tb->flags >> VM_SHIFT) & 1) {
-        g_s2e_allow_custom_instructions = 1;
-        return;
-    }
+/*     if ((tb->flags >> VM_SHIFT) & 1) { */
+        // g_s2e_allow_custom_instructions = 1;
+        // return;
+    /* } */
 
     if (m_monitor->isKernelAddress(pc)) { // XXX make it configurable
         g_s2e_allow_custom_instructions = 1;
@@ -190,9 +195,9 @@ void BaseInstructions::makeSymbolic(S2EExecutionState *state, uintptr_t address,
 void BaseInstructions::makeSymbolic(S2EExecutionState *state, bool makeConcolic) {
     target_ulong address, size, name;
     bool ok = true;
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &address, sizeof address, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EBX]), &size, sizeof size, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &name, sizeof name, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &address, sizeof address, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[1]), &size, sizeof size, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[2]), &name, sizeof name, false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
@@ -214,9 +219,9 @@ void BaseInstructions::isSymbolic(S2EExecutionState *state) {
     target_ulong result;
 
     bool ok = true;
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &address, sizeof(address), false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[2]), &address, sizeof(address), false);
 
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &size, sizeof(size), false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &size, sizeof(size), false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op is_symbolic\n";
@@ -240,7 +245,7 @@ void BaseInstructions::isSymbolic(S2EExecutionState *state) {
     getDebugStream(state) << "Testing whether data at " << hexval(address) << " and size " << size
                           << " is symbolic: " << (result ? " true" : " false") << '\n';
 
-    state->regs()->write(CPU_OFFSET(regs[R_EAX]), &result, sizeof(result));
+    state->regs()->write(CPU_OFFSET(regs[0]), &result, sizeof(result));
 }
 
 void BaseInstructions::killState(S2EExecutionState *state) {
@@ -254,8 +259,8 @@ void BaseInstructions::killState(S2EExecutionState *state) {
 #endif
 
     bool ok = true;
-    klee::ref<klee::Expr> status = state->regs()->read(CPU_OFFSET(regs[R_EAX]), width);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EBX]), &messagePtr, sizeof messagePtr, false);
+    klee::ref<klee::Expr> status = state->regs()->read(CPU_OFFSET(regs[0]), width);
+    ok &= state->regs()->read(CPU_OFFSET(regs[1]), &messagePtr, sizeof messagePtr, false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_kill_state \n";
@@ -285,8 +290,8 @@ void BaseInstructions::printExpression(S2EExecutionState *state) {
 
     target_ulong name;
     bool ok = true;
-    klee::ref<Expr> val = state->regs()->read(offsetof(CPUX86State, regs[R_EAX]), width);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &name, sizeof name, false);
+    klee::ref<Expr> val = state->regs()->read(offsetof(CPUARMState, regs[0]), width);
+    ok &= state->regs()->read(CPU_OFFSET(regs[2]), &name, sizeof name, false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
@@ -310,9 +315,9 @@ void BaseInstructions::printExpression(S2EExecutionState *state) {
 void BaseInstructions::printMemory(S2EExecutionState *state) {
     target_ulong address, size, name;
     bool ok = true;
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &address, sizeof address, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EBX]), &size, sizeof size, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &name, sizeof name, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &address, sizeof address, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[1]), &size, sizeof size, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[2]), &name, sizeof name, false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
@@ -341,9 +346,9 @@ void BaseInstructions::printMemory(S2EExecutionState *state) {
 void BaseInstructions::hexDump(S2EExecutionState *state) {
     target_ulong address, size, name;
     bool ok = true;
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &address, sizeof address, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EBX]), &size, sizeof size, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &name, sizeof name, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &address, sizeof address, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[1]), &size, sizeof size, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[2]), &name, sizeof name, false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
@@ -404,8 +409,8 @@ void BaseInstructions::concretize(S2EExecutionState *state, bool addConstraint) 
     target_ulong address, size;
 
     bool ok = true;
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &address, sizeof address, false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EDX]), &size, sizeof size, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &address, sizeof address, false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[3]), &size, sizeof size, false);
 
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
@@ -433,7 +438,7 @@ void BaseInstructions::concretize(S2EExecutionState *state, bool addConstraint) 
 
 void BaseInstructions::sleep(S2EExecutionState *state) {
     long duration = 0;
-    state->regs()->read(CPU_OFFSET(regs[R_EAX]), &duration, sizeof(duration), false);
+    state->regs()->read(CPU_OFFSET(regs[0]), &duration, sizeof(duration), false);
     getDebugStream() << "Sleeping " << duration << " seconds\n";
 
     llvm::sys::TimeValue startTime = llvm::sys::TimeValue::now();
@@ -449,7 +454,7 @@ void BaseInstructions::sleep(S2EExecutionState *state) {
 
 void BaseInstructions::printMessage(S2EExecutionState *state, bool isWarning) {
     target_ulong address = 0;
-    bool ok = state->regs()->read(CPU_OFFSET(regs[R_EAX]), &address, sizeof address, false);
+    bool ok = state->regs()->read(CPU_OFFSET(regs[0]), &address, sizeof address, false);
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
                                     " message opcode\n";
@@ -481,7 +486,7 @@ void BaseInstructions::checkPlugin(S2EExecutionState *state) const {
     target_ulong loaded = 0;
     bool ok = true;
 
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &pluginNamePointer, sizeof(pluginNamePointer), false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &pluginNamePointer, sizeof(pluginNamePointer), false);
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic arguments were passed to s2e_op checkPlugin opcode\n";
         loaded = 0;
@@ -497,7 +502,7 @@ void BaseInstructions::checkPlugin(S2EExecutionState *state) const {
     loaded = s2e()->getPlugin(pluginName) == NULL ? 0 : 1;
 
 fail:
-    state->regs()->write(CPU_OFFSET(regs[R_EAX]), &loaded, sizeof(loaded));
+    state->regs()->write(CPU_OFFSET(regs[0]), &loaded, sizeof(loaded));
 }
 
 void BaseInstructions::invokePlugin(S2EExecutionState *state) {
@@ -510,9 +515,9 @@ void BaseInstructions::invokePlugin(S2EExecutionState *state) {
     target_ulong result = 0;
     bool ok = true;
 
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &pluginNamePointer, sizeof(pluginNamePointer), false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &dataPointer, sizeof(dataPointer), false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EDX]), &dataSize, sizeof(dataSize), false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[0]), &pluginNamePointer, sizeof(pluginNamePointer), false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[2]), &dataPointer, sizeof(dataPointer), false);
+    ok &= state->regs()->read(CPU_OFFSET(regs[3]), &dataSize, sizeof(dataSize), false);
     if (!ok) {
         getWarningsStream(state) << "ERROR: symbolic arguments were passed to s2e_op invokePlugin opcode\n";
         result = 1;
@@ -543,11 +548,11 @@ void BaseInstructions::invokePlugin(S2EExecutionState *state) {
     iface->handleOpcodeInvocation(state, dataPointer, dataSize);
 
 fail:
-    state->regs()->write(CPU_OFFSET(regs[R_EAX]), &result, sizeof(result));
+    state->regs()->write(CPU_OFFSET(regs[0]), &result, sizeof(result));
 }
 
 void BaseInstructions::assume(S2EExecutionState *state) {
-    klee::ref<klee::Expr> expr = state->regs()->read(CPU_OFFSET(regs[R_EAX]), klee::Expr::Int32);
+    klee::ref<klee::Expr> expr = state->regs()->read(CPU_OFFSET(regs[0]), klee::Expr::Int32);
     assumeInternal(state, expr);
 }
 
@@ -556,9 +561,9 @@ void BaseInstructions::assumeRange(S2EExecutionState *state) {
     klee::ref<klee::Expr> lower;
     klee::ref<klee::Expr> upper;
 
-    value = state->regs()->read(CPU_OFFSET(regs[R_EAX]), klee::Expr::Int32);
-    lower = state->regs()->read(CPU_OFFSET(regs[R_ECX]), klee::Expr::Int32);
-    upper = state->regs()->read(CPU_OFFSET(regs[R_EDX]), klee::Expr::Int32);
+    value = state->regs()->read(CPU_OFFSET(regs[0]), klee::Expr::Int32);
+    lower = state->regs()->read(CPU_OFFSET(regs[2]), klee::Expr::Int32);
+    upper = state->regs()->read(CPU_OFFSET(regs[3]), klee::Expr::Int32);
 
     klee::ref<klee::Expr> condition =
         klee::AndExpr::create(klee::UgeExpr::create(value, lower), klee::UleExpr::create(value, upper));
@@ -649,39 +654,39 @@ void BaseInstructions::assumeInternal(S2EExecutionState *state, klee::ref<klee::
  * any page protections. Can be used to hack kernel memory from user apps.
  * Use with caution.
  */
-void BaseInstructions::writeBuffer(S2EExecutionState *state) {
-    target_ulong source, destination, size;
-    bool ok = true;
+/* void BaseInstructions::writeBuffer(S2EExecutionState *state) { */
+    // target_ulong source, destination, size;
+    // bool ok = true;
 
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ESI]), &source, sizeof(source), false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_EDI]), &destination, sizeof(destination), false);
-    ok &= state->regs()->read(CPU_OFFSET(regs[R_ECX]), &size, sizeof(size), false);
+    // ok &= state->regs()->read(CPU_OFFSET(regs[R_ESI]), &source, sizeof(source), false);
+    // ok &= state->regs()->read(CPU_OFFSET(regs[R_EDI]), &destination, sizeof(destination), false);
+    // ok &= state->regs()->read(CPU_OFFSET(regs[2]), &size, sizeof(size), false);
 
-    getDebugStream(state) << "BaseInstructions: copying " << size << " bytes from " << hexval(source) << " to "
-                          << hexval(destination) << "\n";
+    // getDebugStream(state) << "BaseInstructions: copying " << size << " bytes from " << hexval(source) << " to "
+                          // << hexval(destination) << "\n";
 
-    uint32_t remaining = (uint32_t) size;
+    // uint32_t remaining = (uint32_t) size;
 
-    while (remaining > 0) {
-        uint8_t byte;
-        if (!state->mem()->read(source, &byte, sizeof(byte))) {
-            getDebugStream(state) << "BaseInstructions: could not read byte at " << hexval(source) << "\n";
-            break;
-        }
+    // while (remaining > 0) {
+        // uint8_t byte;
+        // if (!state->mem()->read(source, &byte, sizeof(byte))) {
+            // getDebugStream(state) << "BaseInstructions: could not read byte at " << hexval(source) << "\n";
+            // break;
+        // }
 
-        if (!state->mem()->write(destination, &byte, sizeof(byte))) {
-            getDebugStream(state) << "BaseInstructions: could not write byte to " << hexval(destination) << "\n";
-            break;
-        }
+        // if (!state->mem()->write(destination, &byte, sizeof(byte))) {
+            // getDebugStream(state) << "BaseInstructions: could not write byte to " << hexval(destination) << "\n";
+            // break;
+        // }
 
-        source++;
-        destination++;
-        remaining--;
-    }
+        // source++;
+        // destination++;
+        // remaining--;
+    // }
 
-    target_ulong written = size - remaining;
-    state->regs()->write(CPU_OFFSET(regs[R_EAX]), &written, sizeof(written));
-}
+    // target_ulong written = size - remaining;
+    // state->regs()->write(CPU_OFFSET(regs[0]), &written, sizeof(written));
+/* } */
 
 void BaseInstructions::getRange(S2EExecutionState *state) {
     klee::ref<klee::Expr> value;
@@ -689,9 +694,9 @@ void BaseInstructions::getRange(S2EExecutionState *state) {
     target_ulong low = 0, high = 0;
 
     unsigned size = state->getPointerSize();
-    value = state->regs()->read(CPU_OFFSET(regs[R_EAX]), size * 8);
-    state->regs()->read(CPU_OFFSET(regs[R_ECX]), &low, size);
-    state->regs()->read(CPU_OFFSET(regs[R_EDX]), &high, size);
+    value = state->regs()->read(CPU_OFFSET(regs[0]), size * 8);
+    state->regs()->read(CPU_OFFSET(regs[2]), &low, size);
+    state->regs()->read(CPU_OFFSET(regs[3]), &high, size);
 
     if (!low || !high) {
         getDebugStream(state) << "BaseInstructions: invalid arguments for range\n";
@@ -713,14 +718,14 @@ void BaseInstructions::getConstraintsCountForExpression(S2EExecutionState *state
     klee::ref<klee::Expr> value;
 
     unsigned size = state->getPointerSize();
-    value = state->regs()->read(CPU_OFFSET(regs[R_EAX]), size * 8);
+    value = state->regs()->read(CPU_OFFSET(regs[0]), size * 8);
 
     Query query(state->constraints, value);
     std::vector<klee::ref<klee::Expr>> requiredConstraints;
     klee::getIndependentConstraintsForQuery(query, requiredConstraints);
 
     target_ulong result = requiredConstraints.size();
-    state->regs()->write(CPU_OFFSET(regs[R_EAX]), &result, sizeof(result));
+    state->regs()->write(CPU_OFFSET(regs[0]), &result, sizeof(result));
 }
 
 /**
@@ -732,22 +737,22 @@ void BaseInstructions::forkCount(S2EExecutionState *state) {
 
     state->jumpToSymbolicCpp();
 
-    state->regs()->read(CPU_OFFSET(regs[R_EAX]), &count, sizeof count);
-    state->regs()->read(CPU_OFFSET(regs[R_ECX]), &nameptr, sizeof nameptr);
+    state->regs()->read(CPU_OFFSET(regs[0]), &count, sizeof count);
+    state->regs()->read(CPU_OFFSET(regs[2]), &nameptr, sizeof nameptr);
 
     std::string name;
 
     if (!state->mem()->readString(nameptr, name)) {
         getWarningsStream(state) << "Could not read string at address " << hexval(nameptr) << "\n";
 
-        state->regs()->write<target_ulong>(CPU_OFFSET(regs[R_EAX]), -1);
+        state->regs()->write<target_ulong>(CPU_OFFSET(regs[0]), -1);
         return;
     }
 
     klee::ref<klee::Expr> var = state->createConcolicValue<uint32_t>(name, 0);
 
-    state->regs()->write(CPU_OFFSET(regs[R_EAX]), var);
-    state->regs()->write<target_ulong>(CPU_OFFSET(eip), state->regs()->getPc() + 10);
+    state->regs()->write(CPU_OFFSET(regs[0]), var);
+    state->regs()->write<target_ulong>(CPU_OFFSET(regs[15]), state->regs()->getPc() + 10);
 
     getDebugStream(state) << "s2e_fork: will fork " << count << " times with variable " << var << "\n";
 
@@ -772,7 +777,7 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
     switch ((opcode >> 8) & 0xFF) {
         case BASE_S2E_CHECK: { /* s2e_check */
             target_ulong v = 1;
-            state->regs()->write(CPU_OFFSET(regs[R_EAX]), &v, sizeof v);
+            state->regs()->write(CPU_OFFSET(regs[0]), &v, sizeof v);
         } break;
         case BASE_S2E_ENABLE_SYMBEX:
             state->enableSymbolicExecution();
@@ -793,7 +798,7 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
 
         case BASE_S2E_GET_PATH_ID: { /* s2e_get_path_id */
             const klee::Expr::Width width = sizeof(target_ulong) << 3;
-            state->regs()->write(offsetof(CPUX86State, regs[R_EAX]), klee::ConstantExpr::create(state->getID(), width));
+            state->regs()->write(offsetof(CPUARMState, regs[0]), klee::ConstantExpr::create(state->getID(), width));
             break;
         }
 
@@ -885,13 +890,13 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
 
         case BASE_S2E_STATE_COUNT: { /* Get number of active states */
             target_ulong count = s2e()->getExecutor()->getStatesCount();
-            state->regs()->write(CPU_OFFSET(regs[R_EAX]), &count, sizeof(count));
+            state->regs()->write(CPU_OFFSET(regs[0]), &count, sizeof(count));
             break;
         }
 
         case BASE_S2E_INSTANCE_COUNT: { /* Get number of active S2E instances */
             target_ulong count = s2e()->getCurrentInstanceCount();
-            state->regs()->write(CPU_OFFSET(regs[R_EAX]), &count, sizeof(count));
+            state->regs()->write(CPU_OFFSET(regs[0]), &count, sizeof(count));
             break;
         }
 
@@ -900,10 +905,10 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
             break;
         }
 
-        case BASE_S2E_WRITE_BUFFER: { /* Write the given buffer to some guest memory location */
-            writeBuffer(state);
-            break;
-        }
+/*         case BASE_S2E_WRITE_BUFFER: { [> Write the given buffer to some guest memory location <] */
+            // writeBuffer(state);
+            // break;
+        /* } */
 
         case BASE_S2E_GET_RANGE: { /* s2e_get_range */
             getRange(state);
@@ -929,6 +934,7 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
             state->regs()->write(CPU_OFFSET(timer_interrupt_disabled), disabled);
             break;
         }
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
         case BASE_S2E_SET_APIC_INT: { /* s2e_enable_all_apic_interrupts / s2e_disable_all_apic_interrupts */
             uint8_t disabled = opcode >> 16;
             if (disabled)
@@ -938,13 +944,13 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
             state->regs()->write(CPU_OFFSET(all_apic_interrupts_disabled), disabled);
             break;
         }
-
+#endif
         case BASE_S2E_GET_OBJ_SZ: { /* s2e_get_ram_objects_bits */
             target_ulong size = SE_RAM_OBJECT_BITS;
-            state->regs()->write(CPU_OFFSET(regs[R_EAX]), &size, sizeof size);
+            state->regs()->write(CPU_OFFSET(regs[0]), &size, sizeof size);
             break;
         }
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
         case BASE_S2E_CLEAR_TEMPS: { /* s2e_invoke_plugin_concrete */
             /**
              * Clear all temporary flags.
@@ -956,7 +962,7 @@ void BaseInstructions::handleBuiltInOps(S2EExecutionState *state, uint64_t opcod
             state->regs()->write(CPU_OFFSET(cc_dst), val);
             state->regs()->write(CPU_OFFSET(cc_tmp), val);
         } break;
-
+#endif
         case BASE_S2E_FORK_COUNT: { /* s2e_fork */
             forkCount(state);
         } break;
@@ -978,6 +984,14 @@ void BaseInstructions::onCustomInstruction(S2EExecutionState *state, uint64_t op
     if (opc <= BASE_S2E_MAX_OPCODE) {
         handleBuiltInOps(state, opcode);
     }
+}
+
+void BaseInstructions::onMakePerpherialSymbolic(S2EExecutionState *state, uintptr_t addr, uint64_t size) {
+    std::string nameStr = "perpherial";
+    getInfoStream(state) <<"make perpherial addr:"<<hexval(addr)<<"width:"<<hexval(size)<<'\n';
+
+    makeSymbolic(state, addr, size, nameStr, true);
+
 }
 
 void BaseInstructions::handleOpcodeInvocation(S2EExecutionState *state, uint64_t guestDataPtr, uint64_t guestDataSize) {

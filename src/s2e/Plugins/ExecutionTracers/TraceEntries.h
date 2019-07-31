@@ -335,6 +335,7 @@ typedef uint8_t bitmask_t;
 
 // XXX: Avoid hard-coded registers
 // XXX: Extend to other kinds of registers
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
 struct ExecutionTraceTb {
     enum ETranslationBlockType {
         TB_DEFAULT = 0,
@@ -359,6 +360,36 @@ struct ExecutionTraceTb {
 
     uint8_t symbMask;
     uint64_t registers[8];
+
+#elif defined(TARGET_ARM)
+struct ExecutionTraceTb {
+    enum ETranslationBlockType {
+        TB_DEFAULT = 0,
+        TB_JMP,
+        TB_JMP_IND,
+        TB_COND_JMP,
+        TB_COND_JMP_IND,
+        TB_CALL,
+        TB_CALL_IND,
+        TB_REP,
+        TB_RET
+    };
+
+    enum ARMRegisters { R0 = 0, R1 = 1, R2 = 2, R3 = 3, R4 = 4, R5 = 5, R6 = 6, R7 = 7 };
+
+    enum ETranslationBlockFlags { RUNNING_CONCRETE = (1U << 0), RUNNING_EXCEPTION_EMULATION_CODE = (1U << 1) };
+
+    uint64_t pc, targetPc;
+    uint32_t size;
+    uint8_t tbType;
+    uint8_t flags;
+
+    uint8_t symbMask;
+    uint64_t registers[15];
+
+#else
+#error Unsupported target architecture
+#endif
 
 #ifdef ENABLE_TRACE_STACK
     bitmask_t stackByteMask[BITMASK_SIZE(TRACE_STACK_SIZE)]; // bit set if memoryRead succeeded

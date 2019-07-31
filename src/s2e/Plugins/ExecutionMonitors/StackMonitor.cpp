@@ -252,7 +252,7 @@ void StackMonitor::onTranslateBlockComplete(S2EExecutionState *state, Translatio
 
 void StackMonitor::onTranslateRegisterAccess(ExecutionSignal *signal, S2EExecutionState *state, TranslationBlock *tb,
                                              uint64_t pc, uint64_t rmask, uint64_t wmask, bool accessesMemory) {
-    if ((wmask & (1 << R_ESP))) {
+    if ((wmask & (1 << 4))) {
         if (tb->se_tb_type == TB_SYSENTER) { // Ignore sysenter (last instruction in this TB)
             s2e_assert(state, tb->precise_entries != 0, "TB " << hexval(tb->pc) << " precise entries info is empty");
             const tb_precise_pc_t &last = tb->precise_pcs[tb->precise_entries - 1];

@@ -61,6 +61,7 @@ private:
     void forkCount(S2EExecutionState *state);
     void allowCurrentPid(S2EExecutionState *state);
     void onCustomInstruction(S2EExecutionState *state, uint64_t opcode);
+    void onMakePerpherialSymbolic(S2EExecutionState *state, uintptr_t addr, uint64_t size);    
     void checkPlugin(S2EExecutionState *state) const;
     void invokePlugin(S2EExecutionState *state);
     void makeSymbolic(S2EExecutionState *state, bool makeConcolic);
@@ -76,7 +77,7 @@ private:
     void assumeRange(S2EExecutionState *state);
     void assumeDisjunction(S2EExecutionState *state);
     void assumeInternal(S2EExecutionState *state, klee::ref<klee::Expr> expr);
-    void writeBuffer(S2EExecutionState *state);
+    //void writeBuffer(S2EExecutionState *state);
     void getRange(S2EExecutionState *state);
     void getConstraintsCountForExpression(S2EExecutionState *state);
 };

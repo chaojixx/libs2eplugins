@@ -145,7 +145,7 @@ bool StaticFunctionModels::handleStrlen(S2EExecutionState *state, uint64_t pc) {
     size_t len;
     ref<Expr> retExpr;
     if (strlenHelper(state, stringAddr, len, retExpr)) {
-        state->regs()->write(offsetof(CPUX86State, regs[R_EAX]), retExpr);
+        state->regs()->write(offsetof(CPUARMState, regs[0]), retExpr);
 
         return true;
     } else {
