@@ -988,9 +988,9 @@ void BaseInstructions::onCustomInstruction(S2EExecutionState *state, uint64_t op
 
 void BaseInstructions::onMakePerpherialSymbolic(S2EExecutionState *state, uintptr_t addr, uint64_t size) {
     std::string nameStr = "perpherial";
-    getInfoStream(state) <<"make perpherial addr:"<<hexval(addr)<<"width:"<<hexval(size)<<'\n';
+    getInfoStream(state) <<"make perpherial addr:"<<hexval(addr)<<" width:"<<hexval(size)<<'\n';
 
-    makeSymbolic(state, addr, size, nameStr, true);
+    makeSymbolic(state, addr, size, nameStr, false);
 
 }
 
