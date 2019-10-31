@@ -110,7 +110,13 @@ void CooperativeSearcher::onCustomInstruction(S2EExecutionState *state, uint64_t
     switch (opc) {
         // Pick the next state specified by the EAX register
         case ScheduleNext: {
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
             ok &= state->regs()->read(CPU_OFFSET(regs[R_EAX]), &nextState, sizeof nextState, false);
+#elif defined(TARGET_ARM)
+            ok &= state->regs()->read(CPU_OFFSET(regs[0]), &nextState, sizeof nextState, false);
+#else
+#error Unsupported target architecture
+#endif
             if (!ok) {
                 getWarningsStream(state) << "ERROR: symbolic argument was passed to s2e_op "
                                             "CooperativeSearcher ScheduleNext"
@@ -128,8 +134,14 @@ void CooperativeSearcher::onCustomInstruction(S2EExecutionState *state, uint64_t
 
             getInfoStream(state) << "CooperativeSearcher picked the state " << nextState << '\n';
 
-            // Force rescheduling
+// Force rescheduling
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
             state->regs()->write<target_ulong>(CPU_OFFSET(eip), state->regs()->getPc() + 10);
+#elif defined(TARGET_ARM)
+            state->regs()->write<target_ulong>(CPU_OFFSET(regs[15]), state->regs()->getPc() + 10);
+#else
+#error Unsupported target architecture
+#endif
             throw CpuExitException();
             break;
         }
@@ -148,8 +160,14 @@ void CooperativeSearcher::onCustomInstruction(S2EExecutionState *state, uint64_t
                 m_currentState = (*it).second;
             }
 
-            // Force rescheduling
+// Force rescheduling
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
             state->regs()->write<target_ulong>(CPU_OFFSET(eip), state->regs()->getPc() + 10);
+#elif defined(TARGET_ARM)
+            state->regs()->write<target_ulong>(CPU_OFFSET(regs[15]), state->regs()->getPc() + 10);
+#else
+#error Unsupported target architecture
+#endif
             throw CpuExitException();
             break;
         }
