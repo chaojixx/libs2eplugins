@@ -247,9 +247,17 @@ void PathSearcher::onTranslateInstruction(ExecutionSignal *signal, S2EExecutionS
 
 void PathSearcher::onInstructionExecution(S2EExecutionState *state, uint64_t pc) {
     getWarningsStream(state) << "reached vulnerability " << hexval(pc) << "\n";
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     uint64_t eax = state->regs()->read<target_ulong>(offsetof(CPUX86State, regs[R_EAX]));
     uint64_t ecx = state->regs()->read<target_ulong>(offsetof(CPUX86State, regs[R_ECX]));
     getWarningsStream(state) << "EAX=" << hexval(eax) << ", ECX=" << hexval(ecx) << "\n";
+#elif defined(TARGET_ARM)
+    uint64_t R0 = state->regs()->read<target_ulong>(offsetof(CPUARMState, regs[0]));
+    uint64_t R2 = state->regs()->read<target_ulong>(offsetof(CPUARMState, regs[2]));
+    getWarningsStream(state) << "EAX=" << hexval(R0) << ", ECX=" << hexval(R2) << "\n";
+#else
+#error Unsupported target architecture
+#endif
 }
 
 void PathSearcher::onSegFault(S2EExecutionState *state, uint64_t pid, uint64_t pc) {

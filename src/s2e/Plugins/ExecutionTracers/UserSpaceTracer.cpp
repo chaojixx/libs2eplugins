@@ -116,9 +116,11 @@ void UserSpaceTracer::trace(S2EExecutionState *state, uint64_t startPc, uint64_t
 }
 
 void UserSpaceTracer::onTranslateBlockComplete(S2EExecutionState *state, TranslationBlock *tb, uint64_t endPc) {
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     if ((tb->flags & HF_CPL_MASK) != 3) {
         return;
     }
+#endif
 
     if (isTraced(getCurrentPid(state))) {
         trace(state, tb->pc, endPc, s2e_trace::TRACE_BLOCK, tb);
@@ -127,9 +129,11 @@ void UserSpaceTracer::onTranslateBlockComplete(S2EExecutionState *state, Transla
 
 void UserSpaceTracer::onTranslateBlockStart(ExecutionSignal *signal, S2EExecutionState *state, TranslationBlock *tb,
                                             uint64_t pc) {
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     if ((tb->flags & HF_CPL_MASK) != 3) {
         return;
     }
+#endif
 
     signal->connect(sigc::mem_fun(*this, &UserSpaceTracer::onExecuteBlockStart));
 }

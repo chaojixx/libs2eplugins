@@ -193,7 +193,7 @@ void FunctionMonitorState::registerReturnSignal(S2EExecutionState *state, Functi
     if (sig.empty()) {
         return;
     }
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     target_ulong esp;
 
     bool ok = state->regs()->read(CPU_OFFSET(regs[R_ESP]), &esp, sizeof esp, false);
@@ -203,6 +203,18 @@ void FunctionMonitorState::registerReturnSignal(S2EExecutionState *state, Functi
                                            << " CR3=" << hexval(state->regs()->getPageDir()) << '\n';
         return;
     }
+#elif defined(TARGET_ARM)
+    target_ulong esp;
+
+    bool ok = state->regs()->read(CPU_OFFSET(regs[13]), &esp, sizeof esp, false);
+    if (!ok) {
+        m_plugin->getWarningsStream(state) << "Function call with symbolic SP!\n"
+                                           << "  PC=" << hexval(state->regs()->getPc()) << '\n';
+        return;
+    }
+#else
+#error Unsupported target architecture
+#endif
 
     uint64_t cr3 = state->regs()->getPageDir();
     ReturnDescriptor descriptor = {cr3, sig};
@@ -220,7 +232,7 @@ void FunctionMonitorState::registerReturnSignal(S2EExecutionState *state, Functi
  */
 void FunctionMonitorState::slotRet(S2EExecutionState *state, uint64_t pc, bool emitSignal) {
     target_ulong cr3 = state->regs()->getPageDir();
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     target_ulong esp;
     bool ok = state->regs()->read(CPU_OFFSET(regs[R_ESP]), &esp, sizeof(target_ulong), false);
     if (!ok) {
@@ -230,6 +242,19 @@ void FunctionMonitorState::slotRet(S2EExecutionState *state, uint64_t pc, bool e
                                            << "  EIP=" << hexval(eip) << " CR3=" << hexval(cr3) << '\n';
         return;
     }
+#elif defined(TARGET_ARM)
+    target_ulong esp;
+    bool ok = state->regs()->read(CPU_OFFSET(regs[13]), &esp, sizeof(target_ulong), false);
+    if (!ok) {
+        target_ulong pc = state->regs()->read<target_ulong>(CPU_OFFSET(regs[15]));
+
+        m_plugin->getWarningsStream(state) << "Function return with symbolic SP!" << '\n'
+                                           << "  PC=" << hexval(pc) << '\n';
+        return;
+    }
+#else
+#error Unsupported target architecture
+#endif
 
     if (m_returnDescriptors.empty()) {
         return;

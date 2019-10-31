@@ -156,7 +156,13 @@ void TranslationBlockTracer::trace(S2EExecutionState *state, uint64_t pc, uint32
 
     for (unsigned i = 0; i < sizeof(env->regs) / sizeof(env->regs[0]); ++i) {
         // XXX: make it portable across architectures
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
         unsigned offset = offsetof(CPUX86State, regs[i]);
+#elif defined(TARGET_ARM)
+        unsigned offset = offsetof(CPUARMState, regs[i]);
+#else
+#error Unsupported target architecture
+#endif
         target_ulong concrete_data;
         if (!state->regs()->read(offset, &concrete_data, sizeof(concrete_data), false)) {
             getConcolicValue(state, offset, &concrete_data);
