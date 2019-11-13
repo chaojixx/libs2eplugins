@@ -21,9 +21,11 @@ namespace plugins {
 namespace hw {
 
 extern "C" {
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
 static bool symbhw_is_symbolic(uint16_t port, void *opaque);
 static klee::ref<klee::Expr> symbhw_symbportread(uint16_t port, unsigned size, uint64_t concreteValue, void *opaque);
 static bool symbhw_symbportwrite(uint16_t port, const klee::ref<klee::Expr> &value, void *opaque);
+#endif
 
 static bool symbhw_is_mmio_symbolic(struct MemoryDesc *mr, uint64_t physaddr, uint64_t size, void *opaque);
 }
@@ -42,8 +44,9 @@ void SymbolicHardware::initialize() {
         getWarningsStream() << "Could not parse config\n";
         exit(-1);
     }
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     g_symbolicPortHook = SymbolicPortHook(symbhw_is_symbolic, symbhw_symbportread, symbhw_symbportwrite, this);
+#endif
     g_symbolicMemoryHook = SymbolicMemoryHook(symbhw_is_mmio_symbolic, symbhw_symbread, symbhw_symbwrite, this);
 }
 
@@ -108,6 +111,7 @@ bool SymbolicHardware::parseConfig(void) {
     for (auto key : keys) {
         std::stringstream ss;
         ss << getConfigKey() << "." << key;
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
         SymbolicPortRanges ports;
         if (!parseRangeList(cfg, ss.str() + ".ports", ports)) {
             return false;
@@ -118,7 +122,7 @@ bool SymbolicHardware::parseConfig(void) {
                              << "\n";
             m_ports.push_back(port);
         }
-
+#endif
         SymbolicMmioRanges mmio;
         if (!parseRangeList(cfg, ss.str() + ".mmio", mmio)) {
             return false;
@@ -142,10 +146,11 @@ template <typename T, typename U> inline bool SymbolicHardware::isSymbolic(T por
 
     return false;
 }
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
 bool SymbolicHardware::isPortSymbolic(uint16_t port) {
     return isSymbolic(m_ports, port);
 }
+#endif
 
 bool SymbolicHardware::isMmioSymbolic(uint64_t physAddr) {
     return isSymbolic(m_mmio, physAddr);
@@ -197,8 +202,8 @@ klee::ref<klee::Expr> SymbolicHardware::createExpression(S2EExecutionState *stat
     }
 }
 
-//////////////////////////////////////////////////////////////////////
-
+/**************************PORT****************************/
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
 static bool symbhw_is_symbolic(uint16_t port, void *opaque) {
     SymbolicHardware *hw = static_cast<SymbolicHardware *>(opaque);
     return hw->isPortSymbolic(port);
@@ -223,8 +228,8 @@ static bool symbhw_symbportwrite(uint16_t port, const klee::ref<klee::Expr> &val
 
     return !hw->isPortSymbolic(port);
 }
-
-//////////////////////////////////////////////////////////////////////
+#endif
+/*************************MMIO*****************************/
 static bool symbhw_is_mmio_symbolic(struct MemoryDesc *mr, uint64_t physaddr, uint64_t size, void *opaque) {
     SymbolicHardware *hw = static_cast<SymbolicHardware *>(opaque);
     return hw->isMmioSymbolic(physaddr);
@@ -252,7 +257,6 @@ static void symbhw_symbwrite(struct MemoryDesc *mr, uint64_t physaddress, const 
     if (DebugSymbHw) {
         hw->getDebugStream(g_s2e_state) << "writing mmio " << hexval(physaddress) << " value: " << value << "\n";
     }
-
     // TODO: return bool to not call original handler, like for I/O
 }
 

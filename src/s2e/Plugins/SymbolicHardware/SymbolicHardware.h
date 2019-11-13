@@ -23,10 +23,13 @@ namespace plugins {
 namespace hw {
 
 typedef std::vector<uint8_t> ConcreteArray;
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
 typedef std::pair<uint16_t, uint16_t> SymbolicPortRange;
+#endif
 typedef std::pair<uint64_t, uint64_t> SymbolicMmioRange;
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
 typedef llvm::SmallVector<SymbolicPortRange, 4> SymbolicPortRanges;
+#endif
 typedef llvm::SmallVector<SymbolicMmioRange, 4> SymbolicMmioRanges;
 
 class SymbolicHardware : public Plugin {
@@ -34,7 +37,9 @@ class SymbolicHardware : public Plugin {
 
 private:
     // TODO: make this per-state and per-device
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     SymbolicPortRanges m_ports;
+#endif
     SymbolicMmioRanges m_mmio;
 
     template <typename T> bool parseRangeList(ConfigFile *cfg, const std::string &key, T &result);
@@ -57,8 +62,9 @@ public:
     }
 
     void initialize();
-
+#if defined(TARGET_I386) || defined(TARGET_X86_64)
     bool isPortSymbolic(uint16_t port);
+#endif
     bool isMmioSymbolic(uint64_t physAddr);
 
     klee::ref<klee::Expr> createExpression(S2EExecutionState *state, SymbolicHardwareAccessType type, uint64_t address,
