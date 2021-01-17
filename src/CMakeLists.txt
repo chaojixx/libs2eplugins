@@ -135,8 +135,11 @@ add_library(
     s2e/Plugins/Core/HostFiles.cpp
     s2e/Plugins/Core/Vmi.cpp
 
-    # Symbolic hardware
-    s2e/Plugins/SymbolicHardware/SymbolicHardware.cpp
+    # uEmu specific plugins
+    s2e/Plugins/uEmu/PeripheralModelLearning.cpp
+    s2e/Plugins/uEmu/ExternalInterrupt.cpp
+    s2e/Plugins/uEmu/ARMFunctionMonitor.cpp
+    s2e/Plugins/uEmu/InvalidStatesDetection.cpp
 
     # Support plugins
     s2e/Plugins/Support/KeyValueStore.cpp
