@@ -53,6 +53,7 @@ private:
     std::pair<uint32_t, std::vector<uint32_t>> last_fork_cond;
     std::map<uint32_t /* irq num */, AllKnowledgeBaseMap> irq_lastforkphs;
     std::map<uint32_t /* pc */, uint32_t /* count */> irqfork_count;
+    std::map<uint32_t /* pc */, uint32_t /* count */> alive_points_count;
     WritePeripheralMap write_phs;
     ReadPeripheralMap read_phs;          // map pair with count rather that value
     TypeFlagPeripheralMap type_flag_phs; // use to indicate control phs map but don't store the value
@@ -483,6 +484,19 @@ public:
 
     uint32_t get_symbolicpc_ph_count(UniquePeripheral phc) {
         return symbolicpc_phs_fork_count[phc];
+    }
+
+    // possible alive point count record
+    void inc_alive_points_count(uint32_t pc) {
+        alive_points_count[pc]++;
+    }
+
+    void clear_alive_points_count(uint32_t pc) {
+        alive_points_count[pc] = 0;
+    }
+
+    uint32_t get_alive_points_count(uint32_t pc) {
+        return alive_points_count[pc];
     }
 };
 }
@@ -1871,10 +1885,17 @@ void PeripheralModelLearning::onLearningTerminationDetection(S2EExecutionState *
     }
 }
 
-void PeripheralModelLearning::onInvalidStatesDetection(S2EExecutionState *state, InvalidStatesType type,
+void PeripheralModelLearning::onInvalidStatesDetection(S2EExecutionState *state, uint32_t pc, InvalidStatesType type,
                                                        uint64_t tb_num) {
     DECLARE_PLUGINSTATE(PeripheralModelLearningState, state);
 
+    // record every termination points for alive point identification
+    plgState->inc_alive_points_count(pc);
+    if (plgState->get_alive_points_count(pc) > 5) {
+        getWarningsStream() << "Learning phase failed, please add the alive point: "
+                            << hexval(pc) <<" and re-run the learning parse\n";
+        exit(-1);
+    }
     // remove current state in cache interrupt states
     if (irq_states.size() > 0) {
         auto itirqs = irq_states.begin();

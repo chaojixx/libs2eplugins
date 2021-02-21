@@ -180,7 +180,7 @@ public:
     void onFork(S2EExecutionState *state, const std::vector<S2EExecutionState *> &newStates,
                 const std::vector<klee::ref<klee::Expr>> &newConditions);
     void onEngineShutdown();
-    void onInvalidStatesDetection(S2EExecutionState *state, InvalidStatesType type, uint64_t tb_num);
+    void onInvalidStatesDetection(S2EExecutionState *state, uint32_t pc, InvalidStatesType type, uint64_t tb_num);
     void onLearningTerminationDetection(S2EExecutionState *state, bool *actual_end, uint64_t tb_num);
     void onExceptionExit(S2EExecutionState *state, uint32_t irq_no);
     void onStateKill(S2EExecutionState *state);
