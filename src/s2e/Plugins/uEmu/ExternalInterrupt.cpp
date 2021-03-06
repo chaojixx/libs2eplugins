@@ -189,7 +189,7 @@ void ExternalInterrupt::onBlockStart(S2EExecutionState *state, uint64_t pc) {
     plgState->inc_tb_num(pc);
 
     if (g_s2e_cache_mode) {
-        if (!*g_s2e_running_concrete) {
+        if (!g_s2e_fast_concrete_invocation) {
             // getWarningsStream() <<" should not happen sym pc = " << hexval(pc) << "\n";
             return;
         }

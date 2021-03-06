@@ -305,7 +305,7 @@ template <typename T> static bool getConcolicValue(S2EExecutionState *state, uns
 
 static std::vector<uint32_t> getRegs(S2EExecutionState *state, uint32_t pc) {
     std::vector<uint32_t> conregs;
-    bool mode = *g_s2e_running_concrete;
+    bool mode = g_s2e_fast_concrete_invocation;
 
     conregs.push_back(pc);
     conregs.push_back(mode);
